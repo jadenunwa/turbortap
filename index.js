@@ -76,18 +76,55 @@ async function simulateKeyboardInput() {
   document.dispatchEvent(keyUpEvent);
 }
 
+function isWithinRestrictedTime() {
+  const now = new Date();
+  const hours = now.getHours();
+  const minutes = now.getMinutes();
+
+  // 11h tối đến 7h sáng
+  if (hours >= 23 || hours < 7) return true;
+
+  // 11h trưa đến 1h trưa
+  if (hours === 11 || (hours === 12 && minutes < 60)) return true;
+
+  // 6h chiều đến 8h tối
+  if (hours >= 18 && hours < 20) return true;
+
+  return false;
+}
+
 async function startSimulating() {
+  let clickCount = 0;
+
   while (true) {
+    if (isWithinRestrictedTime()) {
+      console.log(
+        "Hiện tại đang trong khung giờ bị hạn chế. Tạm dừng mô phỏng."
+      );
+      await new Promise((resolve) => setTimeout(resolve, 60 * 1000)); // Chờ 1 phút rồi kiểm tra lại
+      continue;
+    }
+
+    if (clickCount >= 7200) {
+      console.log("Đã đạt giới hạn 7200 click. Tạm nghỉ 45 phút.");
+      await new Promise((resolve) => setTimeout(resolve, 20 * 60 * 1000)); // Nghỉ 45 phút
+      clickCount = 0; // Reset lại bộ đếm
+    }
+
     const { x, y } = getRandomPosition();
     await simulateMouseMovement(x, y, Math.floor(Math.random() * 10 + 5));
     simulateClick(x, y);
+    clickCount++;
+
     if (Math.random() < 0.3) {
       await simulateKeyboardInput();
     }
-    const waitTime = Math.random() * 350 + 100;
+
+    const waitTime = Math.random() * 450 + 100;
     console.log(`Đợi ${waitTime.toFixed(0)}ms trước lần tiếp theo.`);
     await new Promise((resolve) => setTimeout(resolve, waitTime));
   }
 }
 
+// Bắt đầu mô phỏng
 startSimulating();
